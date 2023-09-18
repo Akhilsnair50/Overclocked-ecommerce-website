@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title th:text="${pageTitle}"></title>
+    <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+    <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+</head>
+<body>
+<div class="container-fluid">
+   <div th:replace="~{fragments::navbar}"></div>
+    <div class="bg-danger container-fluid">
+        <h1 class="text-center  bg-danger" th:text="${pageHeading}">
+
+        </h1>
+    </div>
+    <form th:action="@{/users/save}" method="post" style="max-width: 700px;margin: auto" th:object="${user}"
+          onsubmit="return checkEmailUnique(this)" enctype="multipart/form-data">
+        <input type="hidden" th:field="*{id}">
+        <div class="border border-secondary rounded p-4">
+            <label class="col-sm-4 col-form-label">Email</label>
+            <div class="col-sm-12 ">
+                <input type="email" class="form-control" th:field="*{email}" required minlength="8" maxlength="128">
+            </div>
+            <label class="col-sm-4 col-form-label">First Name</label>
+            <div class="col-sm-12 ">
+                <input type="text" class="form-control" th:field="*{firstName}" required minlength="2" maxlength="45">
+            </div>
+            <label class="col-sm-4 col-form-label">Last Name</label>
+            <div class="col-sm-12 ">
+                <input type="text" class="form-control" th:field="*{lastName}" required minlength="1" maxlength="45">
+            </div>
+            <label class="col-sm-4 col-form-label">Password</label>
+            <div class="col-sm-12 ">
+
+                <input type="password" th:if="${user.id==null}" class="form-control" th:field="*{password}" required minlength="8" maxlength="64">
+                <input type="password" th:if="${user.id!=null}" placeholder="enter new password" class="form-control" th:field="*{password}"  minlength="8" maxlength="64">
+            </div>
+            <div class="col-sm-12 ">
+            <label class="col-sm-4 col-form-label pb-4 list-group block-list" >Roles:</label>
+                <th:block th:each="role:${listRoles}">
+                <input type="checkbox" th:field="*{roles}"
+                th:text="${role.name}" th:value="${role.id}" class="checkboxes">--<small th:text="${role.description}"></small>
+                    <br>
+                </th:block>
+            </div>
+            <br>
+            <div class="form-group row">
+                <div class="col-sm-5">
+                <label class="col-sm-4 col-form-label">Enabled</label>
+                    <input type="checkbox" th:field="*{enabled}">
+                </div>
+                <div class="col-sm-12 ">
+                    <label class="col-sm-4 col-form-label">Images</label>
+                    <input type="hidden" th:field="*{photos}">
+                    <input type="file" id="fileImage" accept="image/png ,image/jpeg" class="mb-2" name="image">
+                    <img id="thumbnail" th:src="@{${user.photosImagePath}}" alt="photos preview user"
+                    class="img-fluid "/>
+                </div>
+
+            </div>
+            <br>
+            <div class="text-center">
+                <input type="submit" value="Save" class="btn btn-primary">
+                <input type="button" value="Cancel" class="btn btn-secondary" id="button-cancel">
+            </div>
+
+        </div>
+
+    </form>
+
+
+</div>
+<div class="container-fluid" th:replace="~{fragments::footer}">
+    <p class="text-center">Overclocked Control panel - Copyright &copy; Overclocked</p>
+</div>
+</body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#button-cancel").on("click",function (){
+            window.location.href = '/ShopmeAdmin/users';
+        });
+        $("#fileImage").change(function (){
+            fileSize = this.files[0].size;
+
+
+            if (fileSize>1048576){
+                this.setCustomValidity("You must choose an image less than 1 MB ! ");
+                this.reportValidity();
+            }else {
+                this.setCustomValidity("");
+                showImageThumbnail(this);
+            }
+            showImageThumbnail(this);
+        });
+    });
+    function showImageThumbnail(fileInput){
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+            reader.onload=function (e){
+            $("#thumbnail").attr("src",e.target.result)
+        };
+        reader.readAsDataURL(file);
+    }
+    function checkEmailUnique(form){
+        url="[[@{/users/check_email}]]";
+        userEmail = $("#email").val();
+        csrfValue = $("input[name='_csrf']").val();
+        userId = $("#id").val();
+        params = {id: userId ,email: userEmail, _csrf: csrfValue};
+
+        $.post(url,params,function (response){
+            if (response=="OK"){
+                form.submit();
+            }
+            else if(response=="Duplicated"){
+                alert("There is already a user having this Email : "+userEmail);
+            }
+            // alert("Response from the server :" + response);
+        });
+        return false;
+    }
+</script>
+</html>
